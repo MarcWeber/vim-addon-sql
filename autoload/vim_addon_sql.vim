@@ -174,7 +174,7 @@ function! vim_addon_sql#Complete(findstart, base)
         return []
       endif
       let text = vim_addon_sql#ThisSQLCommand()
-      let words = split(join(text,"\n"),"[\n\r \t'\"()\\[\\],]")
+      let words = split(join(text,"\n"),"[\n\r \t'\"()\\[\\],;]")
       let tables = b:db_conn.tables()
 
       let l = matchlist(a:base,'\([^.]*\)\.\([^.]*\)')
@@ -193,12 +193,6 @@ function! vim_addon_sql#Complete(findstart, base)
             \ , "vim_dev_plugin_completion_func", {'match_beginning_of_string': 0})
       let s:additional_regex = get(patterns, 'vim_regex', "")
 
-
-
-      if alias == '' && exists('b:db_conn.extraCompletions')
-        call b:db_conn.extraCompletions()
-      endif
-
       let tr = b:db_conn['regex']['table']
       let pat = '\zs\('.tr.'\)\s\+\cas\C\s\+\('.tr.'\)\ze' 
       let pat2 = b:db_conn['regex']['table_from_match']
@@ -211,16 +205,6 @@ function! vim_addon_sql#Complete(findstart, base)
       endfor
 
       let [bc,ac] = vim_addon_sql#SplitCurrentLineAtCursor()
-      " add table completion
-      " don't add table completion if cursor is located after a SELECT
-      " note that something like SELECT id, (SELECT .. FROM WHERE) ... could be valid
-      if alias == '' && !(bc =~ '\cSELECT\C[^()]*$' && !bc =~ 'FROM.*$')
-        for t in tables
-          if s:Match(t)
-            call complete_add({'word' : t, 'menu' : 'a table'})
-          endif
-        endfor
-      endif
 
       " before AS or after SELECT ... FROM, INSERT INTO .. CREATE / DROP / ALTER TABLE only table names will be shown
       if (bc =~ '\c\%(FROM[^(]*\s\+\|JOIN\s\+\|INTO\s\+\|TABLE\s\+\)\C$' && bc !~ '\cWHERE' ) || ac =~ '^\s*as\>'
@@ -248,8 +232,24 @@ function! vim_addon_sql#Complete(findstart, base)
             call complete_add({'word' : aliasP.f, 'abbr' : f, 'menu' : 'field of '.table.noAliasMatchWarning })
           endif
         endfor
-        call complete_check()|
+        call complete_check()
       endfor
+
+      " add table completion
+      " don't add table completion if cursor is located after a SELECT
+      " note that something like SELECT id, (SELECT .. FROM WHERE) ... could be valid
+      if alias == '' && !(bc =~ '\cSELECT\C[^()]*$' && !bc =~ 'FROM.*$')
+        for t in tables
+          if s:Match(t)
+            call complete_add({'word' : t, 'menu' : 'a table'})
+          endif
+        endfor
+      endif
+
+      if alias == '' && exists('b:db_conn.extraCompletions')
+        call b:db_conn.extraCompletions()
+      endif
+
       return []
     endif
 endfunction
@@ -320,7 +320,7 @@ function! vim_addon_sql#MysqlConn(conn)
     for [d,v] in items(self['functions'])
       if s:Match(d)
         let args = d.'('. v.args .')'
-        call complete_add({'word': d
+        call complete_add({'word': d.(v.args == '' ? '' : '(')
               \ ,'menu': args
               \ ,'info': args."\n".v.description
               \ ,'dup': 1})
