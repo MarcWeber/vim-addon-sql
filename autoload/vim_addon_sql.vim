@@ -207,38 +207,35 @@ function! vim_addon_sql#Complete(findstart, base)
       let [bc,ac] = vim_addon_sql#SplitCurrentLineAtCursor()
 
       " before AS or after SELECT ... FROM, INSERT INTO .. CREATE / DROP / ALTER TABLE only table names will be shown
-      if (bc =~ '\c\%(FROM[^(]*\s\+\|JOIN\s\+\|INTO\s\+\|TABLE\s\+\)\C$' && bc !~ '\cWHERE' ) || ac =~ '^\s*as\>'
-        return []
-      endif
+      let tablesOnly =  (bc =~ '\c\%(FROM[^(]*\s\+\|JOIN\s\+\|INTO\s\+\|TABLE\s\+\)\C$' && bc !~ '\cWHERE' ) || ac =~ '^\s*as\>'
 
-      " field completion
-      let table = get(aliases, alias,'')
-      if alias != '' && table == ''
-        let noAliasMatchWarning = ' ! alias not defined or table not found'
-      else
-        let noAliasMatchWarning = ''
-      endif
+      if ! tablesOnly
+        " field completion
+        let table = get(aliases, alias,'')
+        if alias != '' && table == ''
+          let noAliasMatchWarning = ' ! alias not defined or table not found'
+        else
+          let noAliasMatchWarning = ''
+        endif
 
-      if table == ''
-        let usedTables = vl#lib#listdict#list#Intersection(tables, words)
-      else
-        let usedTables = [table]
-      endif
-      let  g:usedTables = usedTables
-      let fields = []
-      for table in usedTables
-        for f in b:db_conn['fields'](table)
-          if s:Match(f)
-            call complete_add({'word' : aliasP.f, 'abbr' : f, 'menu' : 'field of '.table.noAliasMatchWarning })
-          endif
+        if table == ''
+          let usedTables = vl#lib#listdict#list#Intersection(tables, words)
+        else
+          let usedTables = [table]
+        endif
+        let  g:usedTables = usedTables
+        let fields = []
+        for table in usedTables
+          for f in b:db_conn['fields'](table)
+            if s:Match(f)
+              call complete_add({'word' : aliasP.f, 'abbr' : f, 'menu' : 'field of '.table.noAliasMatchWarning, 'dup': 1})
+            endif
+          endfor
+          call complete_check()
         endfor
-        call complete_check()
-      endfor
+      endif
 
-      " add table completion
-      " don't add table completion if cursor is located after a SELECT
-      " note that something like SELECT id, (SELECT .. FROM WHERE) ... could be valid
-      if alias == '' && !(bc =~ '\cSELECT\C[^()]*$' && !bc =~ 'FROM.*$')
+      if alias == '' && !(bc !~ '\cFROM' && ac =~ '\cFROM')
         for t in tables
           if s:Match(t)
             call complete_add({'word' : t, 'menu' : 'a table'})
