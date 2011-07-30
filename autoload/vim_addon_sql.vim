@@ -226,7 +226,7 @@ function! vim_addon_sql#Complete(findstart, base)
         endif
 
         if table == ''
-          let usedTables = vl#lib#listdict#list#Intersection(tables, words)
+          let usedTables = vim_addon_sql#Intersection(tables, words)
         else
           let usedTables = [table]
         endif
