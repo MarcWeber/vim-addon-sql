@@ -172,7 +172,7 @@ function! vim_addon_sql#Complete(findstart, base)
     "findstart = 1 when we need to get the text length
     if a:findstart == 1
         let [bc,ac] = vim_addon_sql#SplitCurrentLineAtCursor()
-        return len(bc)-len(matchstr(bc,'\%(\a\|\.\|_\)*$'))
+        return len(bc)-len(matchstr(bc,'\%(\a\|\.\|_\|\d\)*$'))
     "findstart = 0 when we need to return the list of completions
     else
 
@@ -218,7 +218,7 @@ function! vim_addon_sql#Complete(findstart, base)
 
       if ! tablesOnly
         " field completion
-        let table = get(aliases, alias,'')
+        debug let table = get(aliases, alias,'')
         if alias != '' && table == ''
           let noAliasMatchWarning = ' ! alias not defined or table not found'
         else
@@ -293,7 +293,7 @@ endfunction
 function! vim_addon_sql#MysqlConn(conn)
   let conn = a:conn
   let conn['regex'] = {
-    \ 'table' :'\%(`[^`]\+`\|[^ \t`]\+\)' 
+    \ 'table' :'\%(`[^`]\+`\|[^ \t,;`]\+\)' 
     \ , 'table_from_match' :'^`\?\zs[^`]*\ze`\?$' 
     \ }
   if ! has_key(conn,'cmd')
@@ -418,7 +418,7 @@ endf
 function! vim_addon_sql#PostgresConn(conn)
   let conn = a:conn
   let conn['regex'] = {
-    \ 'table' :'\%(`[^`]\+`\|[^ \t`]\+\)' 
+    \ 'table' :'\%(`[^`]\+`\|[^ \t,;`]\+\)' 
     \ , 'table_from_match' :'^`\?\zs[^`]*\ze`\?$' 
     \ }
   if ! has_key(conn,'cmd')
@@ -528,7 +528,7 @@ function! vim_addon_sql#SqliteConn(conn)
   let conn = a:conn
   let conn['executable'] = get(conn,'executable', 'sqlite3')
   let conn['regex'] = {
-    \ 'table' :'\%(`[^`]\+`\|[^ \t`]\+\)' 
+    \ 'table' :'\%(`[^`]\+`\|[^ \t,;`]\+\)' 
     \ , 'table_from_match' :'^`\?\zs[^`]*\ze`\?$' 
     \ }
   if ! has_key(conn,'database')
@@ -608,7 +608,7 @@ function! vim_addon_sql#FirebirdConn(conn)
   let conn['username'] = get(conn,'username','SYSDBA')
   let conn['password'] = get(conn,'password','masterkey')
   let conn['regex'] = {
-    \ 'table' :'\%(`[^`]\+`\|[^ \t`]\+\)' 
+    \ 'table' :'\%(`[^`]\+`\|[^ \t,;`]\+\)' 
     \ , 'table_from_match' :'^`\?\zs[^`]*\ze`\?$' 
     \ }
   if ! has_key(conn,'database')
