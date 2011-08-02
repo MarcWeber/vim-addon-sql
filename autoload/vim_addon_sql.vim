@@ -218,7 +218,7 @@ function! vim_addon_sql#Complete(findstart, base)
 
       if ! tablesOnly
         " field completion
-        debug let table = get(aliases, alias,'')
+        let table = get(aliases, alias,'')
         if alias != '' && table == ''
           let noAliasMatchWarning = ' ! alias not defined or table not found'
         else
