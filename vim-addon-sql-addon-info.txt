@@ -7,7 +7,7 @@
   "dependencies" : {
     "tlib": {},
     "vim-addon-background-cmd": {},
-    "vim-addon-completion": {},
+    "vim-addon-completion": {}
   },
   "description" : "kiss alias aware SQL completion for VIM"
 }
