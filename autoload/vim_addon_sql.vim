@@ -41,7 +41,12 @@ function! vim_addon_sql#ThisSQLCommand()
   while up > 0 && getline(up) !~ ';$\|^\s*$'
     let up = up - 1
   endwhile
-  while down <= line('$') && getline(down) !~ ';$\|^\s*$'
+  " stop if ; is found
+  " stop on empty line unless its current line which may be empty when
+  " completing
+  while getline(down) !~ ';$' 
+        \ && down <= line('$') && 
+        \ ( down == line('.') || getline(down) !~ '^\s*$')
     let down = down + 1
   endwhile
   return getline(up+1,down)
