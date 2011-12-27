@@ -298,8 +298,8 @@ endfunction
 function! vim_addon_sql#MysqlConn(conn)
   let conn = a:conn
   let conn['regex'] = {
-    \ 'table' :'\%(`[^`]\+`\|[^ \t,;`]\+\)' 
-    \ , 'table_from_match' :'^`\?\zs[^`]*\ze`\?$' 
+    \ 'table' :'\%(`[^`]\+`\|[^ \t\r\n,;`]\+\)' 
+    \ , 'table_from_match' :'^`\?\zs[^`\n\r]*\ze`\?$' 
     \ }
   if ! has_key(conn,'cmd')
     let cmd=[s:c.mysql]
@@ -423,8 +423,8 @@ endf
 function! vim_addon_sql#PostgresConn(conn)
   let conn = a:conn
   let conn['regex'] = {
-    \ 'table' :'\%(`[^`]\+`\|[^ \t,;`]\+\)' 
-    \ , 'table_from_match' :'^`\?\zs[^`]*\ze`\?$' 
+    \ 'table' :'\%(`[^`]\+`\|[^ \t\r\n,;`]\+\)' 
+    \ , 'table_from_match' :'^`\?\zs[^`\r\n]*\ze`\?$' 
     \ }
   if ! has_key(conn,'cmd')
     let cmd=[s:c.psql]
@@ -528,15 +528,15 @@ endfunction
 
 
 " sqlite implementation {{{1
-" conn must be {'filepath:'..','cmd':'sqlite3'}
+" conn must be {'database':'..','cmd':'sqlite3'}
 function! vim_addon_sql#SqliteConn(conn)
   let conn = a:conn
   let conn['executable'] = get(conn,'executable', 'sqlite3')
   let conn['regex'] = {
-    \ 'table' :'\%(`[^`]\+`\|[^ \t,;`]\+\)' 
-    \ , 'table_from_match' :'^`\?\zs[^`]*\ze`\?$' 
+    \ 'table' :'\%(`[^`]\+`\|[^ \t\r\n,;`]\+\)' 
+    \ , 'table_from_match' :'^`\?\zs[^`\r\n]*\ze`\?$' 
     \ }
-  if ! has_key(conn,'database')
+  if ! has_key(conn,'filepath')
     throw 'sqlite connection requires key database!'
   endif
 
@@ -554,11 +554,11 @@ function! vim_addon_sql#SqliteConn(conn)
   endfunction
   call conn['invalidateSchema']()
 
-  function! conn.databases()
-    return vim_addon_sql#MapIf(
-            \ split(vim_addon_sql#System(self['cmd']+["-e",'show databases\G']),"\n"),
-            \ "Val =~ '^Database: '", "matchstr(Val, ".string('Database: \zs.*').")")
-  endfun
+  " function! conn.databases()
+  "   return vim_addon_sql#MapIf(
+  "           \ split(vim_addon_sql#System(self['cmd']+["-e",'show databases\G']),"\n"),
+  "           \ "Val =~ '^Database: '", "matchstr(Val, ".string('Database: \zs.*').")")
+  " endfun
 
   " output must have been created with \G, no multilines supported yet
   function! conn.col(col, output)
@@ -580,7 +580,7 @@ function! vim_addon_sql#SqliteConn(conn)
         if l =~ 'CREATE TABLE' | continue | endif
         " endo of field list
         if l =~ ');' | break | endif
-        call add(fields, matchstr( l, '^,\zs\?\S*\ze') )
+        call add(fields, matchstr( l, '^[ \t]*\zs\S*\ze') )
       endfor
       let self['schema']['tables'][table] = { 'fields' : fields }
     endfor
@@ -613,8 +613,8 @@ function! vim_addon_sql#FirebirdConn(conn)
   let conn['username'] = get(conn,'username','SYSDBA')
   let conn['password'] = get(conn,'password','masterkey')
   let conn['regex'] = {
-    \ 'table' :'\%(`[^`]\+`\|[^ \t,;`]\+\)' 
-    \ , 'table_from_match' :'^`\?\zs[^`]*\ze`\?$' 
+    \ 'table' :'\%(`[^`]\+`\|[^ \t\r\n,;`]\+\)' 
+    \ , 'table_from_match' :'^`\?\zs[^`\r\n]*\ze`\?$' 
     \ }
   if ! has_key(conn,'database')
     throw 'firebird connection requires key database!'
