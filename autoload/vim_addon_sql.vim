@@ -24,6 +24,7 @@ let s:c['isql'] = get(s:c,'isql','isql')
 let s:c['mysql'] = get(s:c,'mysql','mysql')
 let s:c['psql'] = get(s:c,'psql','psql')
 let s:c['sqlite3'] = get(s:c,'sqlite3','sqlite3')
+let s:c['isql'] = get(s:c,'isql','sqlite3')
 
 let s:thisDir = expand('<sfile>:h')
 let s:mysqlFunctionsDump = s:thisDir.'/mysql-functions.dump'
@@ -271,7 +272,8 @@ function! vim_addon_sql#Connect(dbType,settings)
   let types = {
     \ 'mysql' : function('vim_addon_sql#MysqlConn'),
     \ 'pg' : function('vim_addon_sql#PostgresConn'),
-    \ 'sqlite' : function('vim_addon_sql#SqliteConn')
+    \ 'sqlite' : function('vim_addon_sql#SqliteConn'),
+    \ 'firebird' : function('vim_addon_sql#FirebirdConn')
     \ }
   let b:db_conn = types[a:dbType](a:settings)
 endfunction
@@ -607,11 +609,12 @@ endfunction
 " vim:fdm=marker
 " firebird implementation {{{1
 " conn must be {'database:'..', ['user':'..','password':.., 'cmd':'isql']}
+" TODO: also provide completion for triggers ...
 function! vim_addon_sql#FirebirdConn(conn)
   let conn = a:conn
   let conn['executable'] = get(conn,'executable', s:c.isql)
-  let conn['username'] = get(conn,'username','SYSDBA')
-  let conn['password'] = get(conn,'password','masterkey')
+  " let conn['username'] = get(conn,'username','SYSDBA')
+  " let conn['password'] = get(conn,'password','masterkey')
   let conn['regex'] = {
     \ 'table' :'\%(`[^`]\+`\|[^ \t\r\n,;`]\+\)' 
     \ , 'table_from_match' :'^`\?\zs[^`\r\n]*\ze`\?$' 
@@ -621,7 +624,9 @@ function! vim_addon_sql#FirebirdConn(conn)
   endif
 
   if !has_key(conn,'cmd')
-    let conn['cmd']=[conn.executable,'-u',conn['username'],'-p',conn['password']]
+    " -e = echo
+    let conn['cmd']=[conn.executable,'-b','-d', conn['database']] 
+          \ + (has_key(conn, 'username') ? ['-u',conn['username'],'-p',conn['password']]: []) 
   endif
 
   fun! conn.extraCompletions()
@@ -672,8 +677,11 @@ function! vim_addon_sql#FirebirdConn(conn)
   endfunction
 
   function! conn.query(sql)
+    " don't append \n so that line numbers fit
+    let sql = "CONNECT '".self['database']."' ".(has_key(self, 'username') ? "USER '".self['username']."' PASSWORD '".self['password']."'" : '').";\n"
+    let sql .= a:sql
     try
-      return vim_addon_sql#System(self['cmd']+[self['database']],{'stdin-text': a:sql.';;'})
+      return vim_addon_sql#System(self['cmd']+[self['database']],{'stdin-text': sql.';'})
     catch /.*/
       call s:ShowError(v:exception)
     endtry
