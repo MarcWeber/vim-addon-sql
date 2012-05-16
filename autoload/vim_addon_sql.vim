@@ -613,8 +613,10 @@ endfunction
 function! vim_addon_sql#FirebirdConn(conn)
   let conn = a:conn
   let conn['executable'] = get(conn,'executable', s:c.isql)
-  " let conn['username'] = get(conn,'username','SYSDBA')
-  " let conn['password'] = get(conn,'password','masterkey')
+  let conn['connect_by_args'] = 1
+  " also allow key user because its the name being used in isql commands
+  let conn['username'] = get(conn,'username', get(conn, 'user','SYSDBA'))
+  let conn['password'] = get(conn,'password','masterkey')
   let conn['regex'] = {
     \ 'table' :'\%(`[^`]\+`\|[^ \t\r\n,;`]\+\)' 
     \ , 'table_from_match' :'^`\?\zs[^`\r\n]*\ze`\?$' 
@@ -623,11 +625,7 @@ function! vim_addon_sql#FirebirdConn(conn)
     throw 'firebird connection requires key database!'
   endif
 
-  if !has_key(conn,'cmd')
-    " -e = echo
-    let conn['cmd']=[conn.executable,'-b','-d', conn['database']] 
-          \ + (has_key(conn, 'username') ? ['-u',conn['username'],'-p',conn['password']]: []) 
-  endif
+  let conn['cmd'] = [conn.executable]
 
   fun! conn.extraCompletions()
     " TODO add firebird function names etc
@@ -678,13 +676,25 @@ function! vim_addon_sql#FirebirdConn(conn)
 
   function! conn.query(sql)
     " don't append \n so that line numbers fit
-    let sql = "CONNECT '".self['database']."' ".(has_key(self, 'username') ? "USER '".self['username']."' PASSWORD '".self['password']."'" : '').";\n"
-    let sql .= a:sql
+    let sql = ''
     try
-      return vim_addon_sql#System(self['cmd']+[self['database']],{'stdin-text': sql.';'})
+
+      if  self.connect_by_args
+        let cmd = copy(self['cmd'])
+        if has_key(self, 'username')
+          let cmd += ['-u', self.username, '-pass', self.password]
+        endif
+        let cmd += [self.database]
+        return vim_addon_sql#System(cmd,{'stdin-text': a:sql.';'})
+      else
+        let authorize = "CONNECT '".self['database']."' ".(has_key(self, 'username') ? "USER '".self['username']."' PASSWORD '".self['password']."'" : '').";\n"
+        return vim_addon_sql#System(self['cmd'],{'stdin-text': authorize . a:sql .';'})
+      endif
+
     catch /.*/
       call s:ShowError(v:exception)
     endtry
+
   endfun
 
   return conn
@@ -693,3 +703,5 @@ endfunction
 "echo c.query('CREATE DATABASE')
 
 " vim:fdm=marker
+"
+
