@@ -206,6 +206,11 @@ function! vim_addon_sql#Complete(findstart, base)
             \ , "vim_dev_plugin_completion_func", {'match_beginning_of_string': 0})
       let s:additional_regex = get(patterns, 'vim_regex', "")
 
+      if get(b:db_conn, 'fields_ignore_case', 0)
+        let s:base = '\c'.s:base
+        let s:additional_regex = '\c'.s:additional_regex
+      endif
+
       let tr = b:db_conn['regex']['table']
       let pat = '\zs\('.tr.'\)\s\+\cas\C\s\+\('.tr.'\)\ze' 
       let pat2 = b:db_conn['regex']['table_from_match']
@@ -617,6 +622,7 @@ function! vim_addon_sql#FirebirdConn(conn)
   " also allow key user because its the name being used in isql commands
   let conn['username'] = get(conn,'username', get(conn, 'user','SYSDBA'))
   let conn['password'] = get(conn,'password','masterkey')
+  let conn['fields_ignore_case'] = 1
   let conn['regex'] = {
     \ 'table' :'\%(`[^`]\+`\|[^ \t\r\n,;`]\+\)' 
     \ , 'table_from_match' :'^`\?\zs[^`\r\n]*\ze`\?$' 
