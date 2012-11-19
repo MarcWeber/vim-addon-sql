@@ -602,7 +602,7 @@ function! vim_addon_sql#SqliteConn(conn)
 
   function! conn.query(sql)
     try
-      return vim_addon_sql#System(self['cmd']+[self['database']],{'stdin-text': a:sql})
+      return s:ClearError(vim_addon_sql#System(self['cmd']+[self['database']],{'stdin-text': a:sql}))
     catch /.*/
       call s:ShowError(v:exception)
     endtry
@@ -691,10 +691,10 @@ function! vim_addon_sql#FirebirdConn(conn)
           let cmd += ['-u', self.username, '-pass', self.password]
         endif
         let cmd += [self.database]
-        return vim_addon_sql#System(cmd,{'stdin-text': a:sql.';'})
+        return s:ClearError(vim_addon_sql#System(cmd,{'stdin-text': a:sql.';'}))
       else
         let authorize = "CONNECT '".self['database']."' ".(has_key(self, 'username') ? "USER '".self['username']."' PASSWORD '".self['password']."'" : '').";\n"
-        return vim_addon_sql#System(self['cmd'],{'stdin-text': authorize . a:sql .';'})
+        return s:ClearError(vim_addon_sql#System(self['cmd'],{'stdin-text': authorize . a:sql .';'}))
       endif
 
     catch /.*/
