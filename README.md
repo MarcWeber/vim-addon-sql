@@ -55,8 +55,9 @@ It should be easy to add an implementation utilizing python or rubies
 database modules.
 
 ## alternative projects:
-dbext might be the most famous one, however in the past it didn't provide alias
-aware completion which is why I wrote this project.
+[dbext](http://www.vim.org/scripts/script.php?script_id=356) might be the most
+famous one, however in the past it didn't provide alias aware completion which
+is why I wrote this project.
 
 In non visual mode the query start / end is determined by either ; or empty lines.
 In visual mode the selection will be executed
