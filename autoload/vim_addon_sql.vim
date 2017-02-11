@@ -692,6 +692,7 @@ function! vim_addon_sql#FirebirdConn(conn)
         if has_key(self, 'username')
           let cmd += ['-u', self.username, '-pass', self.password]
         endif
+        let cmd += ["-pag", "0"]
         let cmd += [self.database]
         return s:ClearError(vim_addon_sql#System(cmd,{'stdin-text': a:sql.';'}))
       else
