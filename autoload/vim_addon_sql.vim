@@ -24,7 +24,6 @@ let s:c['isql'] = get(s:c,'isql','isql')
 let s:c['mysql'] = get(s:c,'mysql','mysql')
 let s:c['psql'] = get(s:c,'psql','psql')
 let s:c['sqlite3'] = get(s:c,'sqlite3','sqlite3')
-let s:c['isql'] = get(s:c,'isql','sqlite3')
 
 let s:thisDir = expand('<sfile>:h')
 let s:mysqlFunctionsDump = s:thisDir.'/mysql-functions.dump'
@@ -168,7 +167,6 @@ endfun
 
 " =========== completion =============================================
 
-
 fun! s:Match(s)
   return a:s =~ s:base || s:additional_regex != "" && a:s =~ s:additional_regex
 endf
@@ -310,6 +308,9 @@ function! vim_addon_sql#MysqlConn(conn)
     \ }
   if ! has_key(conn,'cmd')
     let cmd=[s:c.mysql]
+    if (has_key(conn, 'socket'))
+      call add(cmd, '-S'.conn['socket'])
+    endif
     if has_key(conn, 'host')
       call add(cmd,'-h') | call add(cmd,conn['host'])
     endif
@@ -325,6 +326,7 @@ function! vim_addon_sql#MysqlConn(conn)
     if has_key(conn, 'extra_args')
       call add(cmd,conn['extra_args'])
     endif
+    call add(cmd, '--default-character-set=utf8')
     let conn['cmd'] = cmd
   endif
 
@@ -543,7 +545,7 @@ function! vim_addon_sql#SqliteConn(conn)
     \ 'table' :'\%(`[^`]\+`\|[^ \t\r\n,;`]\+\)' 
     \ , 'table_from_match' :'^`\?\zs[^`\r\n]*\ze`\?$' 
     \ }
-  if ! has_key(conn,'filepath')
+  if ! has_key(conn, 'database')
     throw 'sqlite connection requires key database!'
   endif
 
